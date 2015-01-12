@@ -1,5 +1,6 @@
 apiVersion: v1beta1
 id: redis-master-pod
+kind: Pod
 desiredState:
   manifest:
     version: v1beta1
