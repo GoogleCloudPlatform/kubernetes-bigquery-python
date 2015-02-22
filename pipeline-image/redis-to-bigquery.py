@@ -8,10 +8,10 @@ import os
 import time
 import urllib
 
+from apiclient import discovery
 import dateutil.parser
-from googleapiclient.discovery import build
 import httplib2
-from oauth2client.client import AccessTokenCredentials
+from oauth2client.client import GoogleCredentials
 import redis
 
 # Get info on the Redis host and port from the environment variables.
@@ -25,7 +25,16 @@ r = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0)
 # Get the numeric project ID from the environment variable set in
 # the 'bigquery-controller.json' manifest.
 PROJECT_ID = os.environ['PROJECT_ID']
-BQ_SCOPE = 'https://www.googleapis.com/auth/bigquery'
+BQ_SCOPES = ['https://www.googleapis.com/auth/bigquery']
+
+def create_bigquery_client():
+    """Build the bigquery client."""
+    credentials = GoogleCredentials.get_application_default()
+    if credentials.create_scoped_required():
+        credentials = credentials.create_scoped(BQ_SCOPES)
+    http = httplib2.Http()
+    credentials.authorize(http)
+    return discovery.build('bigquery', 'v2', http=http)
 
 
 def flatten(l):
@@ -143,19 +152,8 @@ def write_to_bq(bigquery):
           print "Giving up: %s" % e3
 
 
-def GenerateAuthenticatedHttp(scopes):
-  """Authenticate to write to BigQuery."""
-  res1 = httplib2.Http().request(
-      'http://metadata/0.1/meta-data/service-accounts/default/acquire?%s'
-      % urllib.urlencode({'scopes': scopes}), method='GET',
-      headers={'Content-Length': '0'})
-  return AccessTokenCredentials(json.loads(res1[1])['accessToken'],
-                                '').authorize(httplib2.Http())
-
-
 if __name__ == '__main__':
   print "starting write to BigQuery...."
-  http = GenerateAuthenticatedHttp(BQ_SCOPE)
-  bigquery = build("bigquery", "v2", http=http)
+  bigquery = create_bigquery_client()
   write_to_bq(bigquery)
 
