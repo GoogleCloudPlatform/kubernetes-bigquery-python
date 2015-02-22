@@ -1,4 +1,4 @@
-id: twitterStreamController
+id: twitter-stream-controller
 apiVersion: v1beta1
 kind: ReplicationController
 desiredState:

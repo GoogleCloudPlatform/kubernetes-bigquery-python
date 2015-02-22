@@ -1,4 +1,4 @@
-id: bigQueryController
+id: bigquery-controller
 apiVersion: v1beta1
 kind: ReplicationController
 desiredState:
