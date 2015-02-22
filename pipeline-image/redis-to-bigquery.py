@@ -83,6 +83,7 @@ def write_to_bq(bigquery):
         tweet = json.loads(res[1])
       except Exception, bqe:
         print bqe
+        continue
       # First do some massaging of the raw data
       mtweet = strip_none(tweet)
       # We only want to write tweets to BigQuery; we'll skip 'delete' and
