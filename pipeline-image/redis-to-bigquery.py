@@ -83,6 +83,7 @@ def write_to_bq(bigquery):
         tweet = json.loads(res[1])
       except Exception, bqe:
         print bqe
+        continue
       # First do some massaging of the raw data
       mtweet = strip_none(tweet)
       # We only want to write tweets to BigQuery; we'll skip 'delete' and
@@ -142,8 +143,7 @@ def write_to_bq(bigquery):
         try:
           # first refresh on the auth, as if there has been a long gap since we
           # last grabbed data from Redis, we may need to re-auth.
-          http = GenerateAuthenticatedHttp(BQ_SCOPE)
-          bigquery = build("bigquery", "v2", http=http)
+          bigquery = create_bigquery_client()
           response = bigquery.tabledata().insertAll(
               projectId=PROJECT_ID, datasetId=dataset, tableId=table, body=body
               ).execute()
