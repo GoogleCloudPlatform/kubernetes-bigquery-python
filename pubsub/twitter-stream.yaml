@@ -13,16 +13,17 @@ desiredState:
     desiredState:
       manifest:
         version: v1beta1
-        id: twitterStream
+        id: twitter-stream
         containers:
-          - name: twitter-to-redis
-            # Change this to your docker hub username
-            image: your-docker-hub-username/pipeline
+          - name: twitter-to-pubsub
+            # Change this to point to your docker image
+            image: gcr.io/your-project/your-image-tag
             env:
               - name: PROCESSINGSCRIPT
-                value: twitter-to-redis
-              - name: REDISLIST
-                value: twitter-stream
+                value: twitter-to-pubsub
+              # Change this to your pubsub topic
+              - name: PUBSUB_TOPIC
+                value: projects/your-project/topics/your-topic
               # Change the following four settings to your twitter credentials
               # information.
               - name: CONSUMERKEY
