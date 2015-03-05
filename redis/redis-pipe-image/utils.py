@@ -18,14 +18,14 @@ data to BigQuery
 """
 
 import collections
-import json
-import os
 import time
 
 from apiclient import discovery
 import dateutil.parser
 import httplib2
 from oauth2client.client import GoogleCredentials
+
+BQ_SCOPES = ['https://www.googleapis.com/auth/bigquery']
 
 
 def create_bigquery_client():
@@ -83,6 +83,7 @@ def cleanup(data):
 
 def bq_data_insert(bigquery, project_id, dataset, table, tweets):
     """Insert a list of tweets into the given BigQuery table."""
+    WAIT = 2  # retry pause
     try:
         rowlist = []
         # Generate the data that will be sent to BigQuery
@@ -99,7 +100,7 @@ def bq_data_insert(bigquery, project_id, dataset, table, tweets):
     except Exception, e1:
         # If an exception was thrown in making the insertion call, try again.
         print e1
-        time.sleep(2)
+        time.sleep(WAIT)
         print "trying again."
         try:
             response = bigquery.tabledata().insertAll(
@@ -107,7 +108,7 @@ def bq_data_insert(bigquery, project_id, dataset, table, tweets):
                     tableId=table, body=body).execute()
             print "streaming response: %s" % response
         except Exception:
-            time.sleep(4)
+            time.sleep(WAIT * 2)
             print "One more retry."
             try:
                 # first refresh on the auth, as if there has been a long gap

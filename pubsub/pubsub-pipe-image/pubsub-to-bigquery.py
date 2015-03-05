@@ -21,31 +21,13 @@ import json
 import os
 import time
 
-from apiclient import discovery
-import httplib2
-from oauth2client.client import GoogleCredentials
-
 import utils
 
-# Get the project ID from the environment variable set in
+# Get the project ID and pubsub topic from the environment variables set in
 # the 'bigquery-controller.yaml' manifest.
 PROJECT_ID = os.environ['PROJECT_ID']
-BQ_SCOPES = ['https://www.googleapis.com/auth/bigquery']
-
 PUBSUB_TOPIC = os.environ['PUBSUB_TOPIC']
-
-PUBSUB_SCOPES = ['https://www.googleapis.com/auth/pubsub']
 NUM_RETRIES = 3
-
-
-def create_pubsub_client():
-    """Build the pubsub client."""
-    credentials = GoogleCredentials.get_application_default()
-    if credentials.create_scoped_required():
-            credentials = credentials.create_scoped(PUBSUB_SCOPES)
-    http = httplib2.Http()
-    credentials.authorize(http)
-    return discovery.build('pubsub', 'v1beta2', http=http)
 
 
 def fqrn(resource_type, project, resource):
@@ -92,7 +74,7 @@ def pull_messages(client, project_name, sub_name):
                 message = receivedMessage.get('message')
                 if message:
                         tweets.append(
-                            base64.b64decode(str(message.get('data'))))
+                            base64.urlsafe_b64decode(str(message.get('data'))))
                         ack_ids.append(receivedMessage.get('ackId'))
         ack_body = {'ackIds': ack_ids}
         client.projects().subscriptions().acknowledge(
@@ -101,20 +83,13 @@ def pull_messages(client, project_name, sub_name):
     return tweets
 
 
-def create_bigquery_client():
-        """Build the bigquery client."""
-        credentials = GoogleCredentials.get_application_default()
-        if credentials.create_scoped_required():
-                credentials = credentials.create_scoped(BQ_SCOPES)
-        http = httplib2.Http()
-        credentials.authorize(http)
-        return discovery.build('bigquery', 'v2', http=http)
-
-
 def write_to_bq(pubsub, sub_name, bigquery):
     """Write the data to BigQuery in small chunks."""
     tweets = []
     CHUNK = 50  # The size of the BigQuery insertion batch.
+    # If no data on the subscription, the time to sleep in seconds
+    # before checking again.
+    WAIT = 2
     tweet = None
     mtweet = None
     while True:
@@ -139,7 +114,7 @@ def write_to_bq(pubsub, sub_name, bigquery):
             else:
                 # pause before checking again
                 print 'sleeping...'
-                time.sleep(2)
+                time.sleep(WAIT)
         utils.bq_data_insert(bigquery, PROJECT_ID, os.environ['BQ_DATASET'],
                              os.environ['BQ_TABLE'], tweets)
         tweets = []
@@ -148,8 +123,9 @@ def write_to_bq(pubsub, sub_name, bigquery):
 if __name__ == '__main__':
     sub_name = "tweets-%s" % PROJECT_ID
     print "starting write to BigQuery...."
-    bigquery = create_bigquery_client()
-    pubsub = create_pubsub_client()
+    credentials = utils.get_credentials()
+    bigquery = utils.create_bigquery_client(credentials)
+    pubsub = utils.create_pubsub_client(credentials)
     try:
         # TODO: check if subscription exists first
         subscription = create_subscription(pubsub, PROJECT_ID, sub_name)

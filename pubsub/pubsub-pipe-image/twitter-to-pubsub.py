@@ -19,12 +19,11 @@ to pull in tweets and publish them to a PubSub topic.
 
 import base64
 import os
-from apiclient import discovery
-import httplib2
-from oauth2client.client import GoogleCredentials
 from tweepy import OAuthHandler
 from tweepy import Stream
 from tweepy.streaming import StreamListener
+
+import utils
 
 # Get your twitter credentials from the environment variables.
 # These are set in the 'twitter-stream.json' manifest file.
@@ -34,19 +33,7 @@ access_token = os.environ['ACCESSTOKEN']
 access_token_secret = os.environ['ACCESSTOKENSEC']
 
 PUBSUB_TOPIC = os.environ['PUBSUB_TOPIC']
-
-PUBSUB_SCOPES = ['https://www.googleapis.com/auth/pubsub']
 NUM_RETRIES = 3
-
-
-def create_pubsub_client():
-    """Build the pubsub client."""
-    credentials = GoogleCredentials.get_application_default()
-    if credentials.create_scoped_required():
-            credentials = credentials.create_scoped(PUBSUB_SCOPES)
-    http = httplib2.Http()
-    credentials.authorize(http)
-    return discovery.build('pubsub', 'v1beta2', http=http)
 
 
 def publish(client, pubsub_topic, data_lines):
@@ -71,7 +58,7 @@ class StdOutListener(StreamListener):
     tweets = []
     batch_size = 50
     total_tweets = 10000000
-    client = create_pubsub_client()
+    client = utils.create_pubsub_client(utils.get_credentials())
 
     def write_to_pubsub(self, tw):
         publish(self.client, PUBSUB_TOPIC, tw)
@@ -99,13 +86,13 @@ class StdOutListener(StreamListener):
 
 if __name__ == '__main__':
     print '....'
-    l = StdOutListener()
+    listener = StdOutListener()
     auth = OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
 
     print 'stream mode is: %s' % os.environ['TWSTREAMMODE']
 
-    stream = Stream(auth, l)
+    stream = Stream(auth, listener)
     # set up the streaming depending upon whether our mode is 'sample', which
     # will sample the twitter public stream. If not 'sample', instead track
     # the given set of keywords.

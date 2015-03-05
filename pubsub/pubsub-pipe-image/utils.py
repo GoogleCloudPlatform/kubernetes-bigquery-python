@@ -18,8 +18,6 @@ data to BigQuery
 """
 
 import collections
-import json
-import os
 import time
 
 from apiclient import discovery
@@ -27,15 +25,30 @@ import dateutil.parser
 import httplib2
 from oauth2client.client import GoogleCredentials
 
+SCOPES = ['https://www.googleapis.com/auth/bigquery',
+          'https://www.googleapis.com/auth/pubsub']
 
-def create_bigquery_client():
-    """Build the bigquery client."""
+
+def get_credentials():
+    """Get the Google credentials needed to access our services."""
     credentials = GoogleCredentials.get_application_default()
     if credentials.create_scoped_required():
-            credentials = credentials.create_scoped(BQ_SCOPES)
+            credentials = credentials.create_scoped(SCOPES)
+    return credentials
+
+
+def create_bigquery_client(credentials):
+    """Build the bigquery client."""
     http = httplib2.Http()
     credentials.authorize(http)
     return discovery.build('bigquery', 'v2', http=http)
+
+
+def create_pubsub_client(credentials):
+    """Build the pubsub client."""
+    http = httplib2.Http()
+    credentials.authorize(http)
+    return discovery.build('pubsub', 'v1beta2', http=http)
 
 
 def flatten(l):
@@ -83,6 +96,7 @@ def cleanup(data):
 
 def bq_data_insert(bigquery, project_id, dataset, table, tweets):
     """Insert a list of tweets into the given BigQuery table."""
+    WAIT = 2  # retry pause
     try:
         rowlist = []
         # Generate the data that will be sent to BigQuery
@@ -99,7 +113,7 @@ def bq_data_insert(bigquery, project_id, dataset, table, tweets):
     except Exception, e1:
         # If an exception was thrown in making the insertion call, try again.
         print e1
-        time.sleep(2)
+        time.sleep(WAIT)
         print "trying again."
         try:
             response = bigquery.tabledata().insertAll(
@@ -107,7 +121,7 @@ def bq_data_insert(bigquery, project_id, dataset, table, tweets):
                     tableId=table, body=body).execute()
             print "streaming response: %s" % response
         except Exception:
-            time.sleep(4)
+            time.sleep(WAIT * 2)
             print "One more retry."
             try:
                 # first refresh on the auth, as if there has been a long gap

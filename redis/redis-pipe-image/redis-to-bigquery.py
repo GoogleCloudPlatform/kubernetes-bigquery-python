@@ -19,11 +19,7 @@ using the BigQuery Streaming API.
 
 import json
 import os
-import time
 
-from apiclient import discovery
-import httplib2
-from oauth2client.client import GoogleCredentials
 import redis
 
 import utils
@@ -39,17 +35,6 @@ r = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0)
 # Get the project ID from the environment variable set in
 # the 'bigquery-controller.yaml' manifest.
 PROJECT_ID = os.environ['PROJECT_ID']
-BQ_SCOPES = ['https://www.googleapis.com/auth/bigquery']
-
-
-def create_bigquery_client():
-    """Build the bigquery client."""
-    credentials = GoogleCredentials.get_application_default()
-    if credentials.create_scoped_required():
-            credentials = credentials.create_scoped(BQ_SCOPES)
-    http = httplib2.Http()
-    credentials.authorize(http)
-    return discovery.build('bigquery', 'v2', http=http)
 
 
 def write_to_bq(bigquery):
@@ -88,5 +73,5 @@ def write_to_bq(bigquery):
 
 if __name__ == '__main__':
     print "starting write to BigQuery...."
-    bigquery = create_bigquery_client()
+    bigquery = utils.create_bigquery_client()
     write_to_bq(bigquery)
