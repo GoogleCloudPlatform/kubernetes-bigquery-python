@@ -27,6 +27,8 @@ from oauth2client.client import GoogleCredentials
 
 SCOPES = ['https://www.googleapis.com/auth/bigquery',
           'https://www.googleapis.com/auth/pubsub']
+NUM_RETRIES = 3
+
 
 
 def get_credentials():
@@ -51,9 +53,9 @@ def create_pubsub_client(credentials):
     return discovery.build('pubsub', 'v1beta2', http=http)
 
 
-def flatten(l):
+def flatten(lst):
     """Helper function used to massage the raw tweet data."""
-    for el in l:
+    for el in lst:
         if (isinstance(el, collections.Iterable) and
                 not isinstance(el, basestring)):
             for sub in flatten(el):
@@ -96,7 +98,6 @@ def cleanup(data):
 
 def bq_data_insert(bigquery, project_id, dataset, table, tweets):
     """Insert a list of tweets into the given BigQuery table."""
-    WAIT = 2  # retry pause
     try:
         rowlist = []
         # Generate the data that will be sent to BigQuery
@@ -107,29 +108,8 @@ def bq_data_insert(bigquery, project_id, dataset, table, tweets):
         # Try the insertion.
         response = bigquery.tabledata().insertAll(
                 projectId=project_id, datasetId=dataset,
-                tableId=table, body=body).execute()
+                tableId=table, body=body).execute(num_retries=NUM_RETRIES)
         print "streaming response: %s" % response
         # TODO: 'invalid field' errors can be detected here.
     except Exception, e1:
-        # If an exception was thrown in making the insertion call, try again.
-        print e1
-        time.sleep(WAIT)
-        print "trying again."
-        try:
-            response = bigquery.tabledata().insertAll(
-                    projectId=project_id, datasetId=dataset,
-                    tableId=table, body=body).execute()
-            print "streaming response: %s" % response
-        except Exception:
-            time.sleep(WAIT * 2)
-            print "One more retry."
-            try:
-                # first refresh on the auth, as if there has been a long gap
-                # since we last obtained data, we may need to re-auth.
-                bigquery = create_bigquery_client()
-                response = bigquery.tabledata().insertAll(
-                        projectId=project_id, datasetId=dataset,
-                        tableId=table, body=body).execute()
-                print "streaming response: %s" % response
-            except Exception, e3:
-                print "Giving up: %s" % e3
+        print "Giving up: %s" % e1
