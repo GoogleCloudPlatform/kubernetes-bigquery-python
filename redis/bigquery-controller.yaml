@@ -16,7 +16,7 @@ desiredState:
         id: bqController
         containers:
           - name: bigquery
-            # Change this to your docker hub username
+            # Change this to point to your docker image
             image: your-docker-hub-username/pipeline
             env:
               - name: PROCESSINGSCRIPT
