@@ -45,15 +45,25 @@ One of the Kubernetes app ***pods*** reads the data from Twitter and publishes i
 
 <img src="http://amy-jo.storage.googleapis.com/images/k8s_pubsub_tw_bq.png" width="680">
 
-This app can be thought of as a 'workflow' type of app-- it doesn't have a web front end (though Kubernetes is great for those types of apps as well).
+This app can be thought of as a 'workflow' type of app-- it doesn't have a web
+front end (though Kubernetes is great for those types of apps as well).
 Instead, it is designed to continously run a scalable data ingestion pipeline.
+Note that PubSub provides [guaranteed at-least-once message
+delivery](https://cloud.google.com/pubsub/overview#benefits).  This means that
+we might sometimes see a duplicated item, but as each tweet has a UID, that's
+not an issue for this example.
 
-See also a related app, in the `redis` directory of this repo, which uses [Redis](http://redis.io/) instead of PubSub.
-The general structure of this example is similar in many respects to that of the Redis example, which is described [here](https://cloud.google.com/solutions/real-time-analysis/kubernetes-redis-bigquery), except that you will be configuring the app to use PubSub instead of Redis.  Much of the setup is the same between the two examples.
+See also a related app, in the `redis` directory of this repo, which uses
+[Redis](http://redis.io/) instead of PubSub. The general structure of this
+example is similar in many respects to that of the Redis example, which is
+described [here](https://cloud.google.com/solutions/real-time-analysis
+/kubernetes-redis-bigquery), except that you will be configuring the app to
+use PubSub instead of Redis.  Much of the setup is the same between the two
+examples.
 
 Note: This tutorial uses several **billable components** of Google Cloud
-Platform. The cost of running this tutorial will vary depending on run time. New Cloud Platform users may
-be eligible for a [free trial](/free-trial).
+Platform. The cost of running this tutorial will vary depending on run time.
+New Cloud Platform users may be eligible for a [free trial](/free-trial).
 
 ## Prerequisites and initial setup
 
