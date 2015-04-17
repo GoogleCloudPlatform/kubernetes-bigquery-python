@@ -7,7 +7,7 @@ desiredState:
     id: redis-master-pod
     containers:
       - name: redis-master
-        image: dockerfile/redis
+        image: redis
         ports:
           - containerPort: 6379
         volumeMounts:
