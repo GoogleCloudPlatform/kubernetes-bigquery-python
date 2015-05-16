@@ -123,7 +123,7 @@ def write_to_bq(pubsub, sub_name, bigquery):
 if __name__ == '__main__':
     topic_info = PUBSUB_TOPIC.split('/')
     topic_name = topic_info[-1]
-    sub_name = "tweets%s_%s" % (topic_name, PROJECT_ID)
+    sub_name = "tweets-%s" % topic_name
     print "starting write to BigQuery...."
     credentials = utils.get_credentials()
     bigquery = utils.create_bigquery_client(credentials)
