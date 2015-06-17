@@ -167,16 +167,16 @@ Note down the name of the topic you made.
 [Download the latest Kubernetes binary release](https://github.com/GoogleCloudPlatform/kubernetes/releases/latest)
 and unpack it into the directory of your choice.
 
-For convenience, you may want to add `<kubernetes>/cluster` to your path.  This directory contains some scripts we'll use.
-
 Make one change before you start up the Kubernetes cluster: **edit the `MINION_SCOPES`** in
 `<kubernetes>/cluster/gce/config-default.sh` before starting up the cluster, to let your instances auth with BigQuery and PubSub:
 
 ```
-MINION_SCOPES=("storage-ro" "compute-rw" "bigquery" "https://www.googleapis.com/auth/cloud-platform")
+MINION_SCOPES=("storage-ro" "compute-rw" "https://www.googleapis.com/auth/monitoring" "https://www.googleapis.com/auth/logging.write" "bigquery" "https://www.googleapis.com/auth/cloud-platform")
 ```
 
-Then, start your cluster as described in the Kubernetes documentation, e.g.:
+Then, see [this section](https://github.com/GoogleCloudPlatform/kubernetes/blob/master/docs/getting-started-guides/gce.md#installing-the-kubernetes-command-line-tools-on-your-workstation) of the GCE "getting started" guide to set up access to the `kubectl` command-line tool in your path. As noted in that guide, `gcloud` also ships with kubectl, which by default is added to your path. However the `gcloud` bundled kubectl version may be older, and we recommend that you use the downloaded binary to avoid potential issues with client/server version skew.
+
+Then, start your cluster as described in the [Kubernetes documentation](https://github.com/GoogleCloudPlatform/kubernetes/tree/master/docs), e.g.:
 
     $ <kubernetes>/cluster/kube-up.sh
 
@@ -211,7 +211,7 @@ Then, tag your image for GCR, using your project name. You can combine these two
 `gcr.io/your_project_name` is your registry location. If your project name has hyphens, replace them with dashes in your tag, as described in the [docs](https://cloud.google.com/tools/container-registry/#preparing_your_docker_image).
 Finally, use `gcloud` to push your image to GCR, using the tag name you created:
 
-    $ gcloud preview docker gcr.io/your_project_name/pubsubpipe
+    $ gcloud docker push gcr.io/your_project_name/pubsubpipe
 
 
 ### Kubernetes pod and replication controller configuration
@@ -237,14 +237,14 @@ After starting up your Kubernetes cluster, and configuring your `pubsub/*.yaml` 
 `<path-to-kubernetes>/cluster` in your path; if not, use the full path):
 
 
-    $ kubectl.sh create -f bigquery-controller_filter.yaml
-    $ kubectl.sh create -f twitter-streamf.yaml
+    $ kubectl.sh create -f bigquery-controller.yaml
+    $ kubectl.sh create -f twitter-stream.yaml
 
 ### Listing your running pods and replication controllers
 
 To see your running pods, run:
 
-    $ kubectl.sh get pods
+    $ kubectl get pods
 
 (Again, this assumes you've put `<path-to-kubernetes>/cluster` in your path)
 
@@ -255,11 +255,7 @@ the `Running` state after about a minute, that is an indication that it isn't st
 
 You can run:
 
-    $ kubectl.sh get replicationControllers
-
-or
-
-    $ kubectl.sh get rc
+    $ kubectl get rc
 
 to see the system's defined replication controllers, and how many replicas each is specified to have.
 
@@ -267,7 +263,7 @@ to see the system's defined replication controllers, and how many replicas each 
 
 For fun, try resizing `bigquery-controller` once its pods are running:
 
-    $ kubectl.sh resize --replicas=3 replicationControllers bigquery-controller
+    $ kubectl scale --replicas=3 rc bigquery-controller
 
 You should see an additional third pod running shortly.
 
@@ -354,14 +350,11 @@ language prefer favoriting to retweeting, or vice versa:
 
 ## Shut down your replicated pods and cluster
 
-To shut down your replicated pods, first resize them to zero (shutting down any running pods), then delete the replicationController.
+Labels make it easy to select the resources you want to stop or delete, e.g.:
 
-You can shut down the replicated pods like this.  Again, the following assumes that `<kubernetes>/cluster` is in your path.
-
-    kubectl.sh resize --replicas=0 replicationControllers bigquery-controller
-    kubectl.sh resize --replicas=0 replicationControllers twitter-stream-controller
-    kubectl.sh delete replicationControllers bigquery-controller
-    kubectl.sh delete replicationControllers twitter-stream-controller
+```shell
+kubectl stop rc -l "name in (twitter-stream, bigquery-controller)"
+```
 
 
 If you'd like to shut down your cluster instances altogether, run the following
@@ -373,12 +366,14 @@ This takes down all of the instances in your cluster.
 
 ## Troubleshooting
 
+In addition to the info here, also see the [Troubleshooting](https://github.com/GoogleCloudPlatform/kubernetes/blob/master/docs/troubleshooting.md) page in the Kubernetes docs.
+
 To confirm that all your nodes, pods, nodes, and replication controllers are up and
 running properly, you can run the following commands:
 
-    $ kubectl.sh get nodes
-    $ kubectl.sh get pods
-    $ kubectl.sh get replicationControllers
+    $ kubectl get nodes
+    $ kubectl get pods
+    $ kubectl get rc
 
 For the pods, you can see whether each pod is `Running` or `Pending`.  If a pod isn't moving into
 the `Running` state after about a minute, that is an indication that it isn't starting up properly.
@@ -386,14 +381,23 @@ the `Running` state after about a minute, that is an indication that it isn't st
 Double check that the pods show that they are using the correct container image name.
 You may also want to double check your .yaml file edits.
 
-If nothing is obvious, a good next step is to ssh into a node and see what is happening with the Docker logs for a pod's containers.
+If nothing is obvious, a good next step is to look at the pod logs.
 
-To inspect a container, first find the node its pod is running on:
+You can do this most easily from your local machine via:
 
-    $ kubectl.sh get pods
+```shell
+$ kubectl logs <pod-name>
+```
+
+You can also ssh into a node and look directly at the docker logs there.
+To do this, first find the node a pod is running on:
+
+```shell
+$ kubectl describe pods/<pod-name>
+```
 
 In the output, look for the `HOST` information for the pod of interest.  It should look something like
-(`kubernetes-minion-<xxxx>`) your desired pod is running on. SSH into the instance:
+(`kubernetes-minion-<xxxx>`). SSH into the instance:
 
     $ gcloud compute --project "<your-project-name>" ssh --zone "<your-project-zone>" "kubernetes-minion-<xxxx>"
 
@@ -424,10 +428,6 @@ If you don't see a running container for a given pod, that may mean that it is n
 Run the following to list all containers:
 
     $ docker ps -a
-
-If there are a lot of containers, you might want to run something like:
-
-    $ docker ps -a | head -20
 
 Look at the container names and see if any of your app containers are exiting rather than starting up properly.  If they are, running
 

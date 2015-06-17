@@ -18,6 +18,7 @@ data to BigQuery
 """
 
 import collections
+import datetime
 import time
 
 from apiclient import discovery
@@ -62,10 +63,10 @@ def cleanup(data):
                 newdict[k] = str(dateutil.parser.parse(v))
             elif v is False:
                 newdict[k] = v
-            # temporarily, ignore the new 'video_info' info.  The current BQ
-            # schema does not support it.
+            # temporarily, ignore some fields not supported by the
+            # current BQ schema.
             # TODO: update BigQuery schema
-            elif k == 'video_info':
+            elif k == 'video_info' or k == 'scopes' or 'quoted_status' in k:
                 pass
             else:
                 if k and v:
@@ -95,7 +96,7 @@ def bq_data_insert(bigquery, project_id, dataset, table, tweets):
         response = bigquery.tabledata().insertAll(
                 projectId=project_id, datasetId=dataset,
                 tableId=table, body=body).execute(num_retries=NUM_RETRIES)
-        print "streaming response: %s" % response
+        print "streaming response: %s %s" % (datetime.datetime.now(), response)
         # TODO: 'invalid field' errors can be detected here.
     except Exception, e1:
         print "Giving up: %s" % e1
