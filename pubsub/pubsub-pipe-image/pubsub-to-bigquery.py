@@ -17,6 +17,7 @@ using the BigQuery Streaming API.
 """
 
 import base64
+import datetime
 import json
 import os
 import time
@@ -92,7 +93,9 @@ def write_to_bq(pubsub, sub_name, bigquery):
     WAIT = 2
     tweet = None
     mtweet = None
-    while True:
+    count = 0
+    count_max = 50000
+    while count < count_max:
         while len(tweets) < CHUNK:
             twmessages = pull_messages(pubsub, PROJECT_ID, sub_name)
             if twmessages:
@@ -108,16 +111,19 @@ def write_to_bq(pubsub, sub_name, bigquery):
                     if 'delete' in mtweet:
                         continue
                     if 'limit' in mtweet:
-                        print mtweet
                         continue
                     tweets.append(mtweet)
             else:
                 # pause before checking again
                 print 'sleeping...'
                 time.sleep(WAIT)
-        utils.bq_data_insert(bigquery, PROJECT_ID, os.environ['BQ_DATASET'],
+        response = utils.bq_data_insert(bigquery, PROJECT_ID, os.environ['BQ_DATASET'],
                              os.environ['BQ_TABLE'], tweets)
         tweets = []
+        count += 1
+        if count % 25 == 0:
+            print ("processing count: %s of %s at %s: %s" %
+                   (count, count_max, datetime.datetime.now(), response))
 
 
 if __name__ == '__main__':
@@ -134,3 +140,4 @@ if __name__ == '__main__':
     except Exception, e:
         print e
     write_to_bq(pubsub, sub_name, bigquery)
+    print 'exited write loop'
