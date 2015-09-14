@@ -187,9 +187,13 @@ If you have cluster startup issues, double check that you have set your default 
 
 ## Configure your app
 
-Now you're ready to configure your app.  This involves two things: building the Docker image used by the app, and editing two Kubernetes *replication controller* config files with your configuration information.
+Now you're ready to configure your app.  This involves two things: optionally building a Docker image to be used by the app, and editing two Kubernetes *replication controller* config files with your configuration information.
 
-### Build and push a Docker image for your app
+### Optional: Build and push a Docker image for your app
+
+If you like, you can use the prebuilt docker image, `gcr.io/google-samples/pubsub-bq-pipe:v1`, for your app. This is the image used by default in the `bigquery-controller.yaml` and `twitter-stream.yaml` files.
+
+Follow the instructions below if you'd like to build and use your own image instead.
 
 This Kubernetes app uses a [Docker](https://www.docker.com/) image that runs the app's python scripts.  (An environment variable set in the replication controller specification files, `PROCESSINGSCRIPT`, indicates which script to run).  Once the image is built, it needs to be pushed somewhere that Kubernetes can access it.  For this example, we'll use the new [Google Container
 Registry](https://cloud.google.com/tools/container-registry/) (GCR), in Beta. It uses a Google Cloud Storage bucket in your own project to store the images, for privacy and low latency.  The GCR [docs](https://cloud.google.com/tools/container-registry/) provide more information on GCR and how to push images to it.  You can also push your

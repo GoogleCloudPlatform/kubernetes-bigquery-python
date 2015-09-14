@@ -80,7 +80,7 @@ def cleanup(data):
             # temporarily, ignore some fields not supported by the
             # current BQ schema.
             # TODO: update BigQuery schema
-            elif k == 'video_info' or k == 'scopes' or 'quoted_status' in k:
+            elif k == 'video_info' or k == 'scopes' or k == 'withheld_in_countries' or 'quoted_status' in k:
                 pass
             else:
                 if k and v:
@@ -110,7 +110,8 @@ def bq_data_insert(bigquery, project_id, dataset, table, tweets):
         response = bigquery.tabledata().insertAll(
                 projectId=project_id, datasetId=dataset,
                 tableId=table, body=body).execute(num_retries=NUM_RETRIES)
-        print "streaming response: %s %s" % (datetime.datetime.now(), response)
+        # print "streaming response: %s %s" % (datetime.datetime.now(), response)
+        return response
         # TODO: 'invalid field' errors can be detected here.
     except Exception, e1:
         print "Giving up: %s" % e1

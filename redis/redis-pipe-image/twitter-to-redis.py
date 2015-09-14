@@ -17,6 +17,7 @@
 to pull in tweets and store them in a Redis server.
 """
 
+import datetime
 import os
 
 import redis
@@ -44,6 +45,8 @@ class StdOutListener(StreamListener):
     """
 
     count = 0
+    redis_errors = 0
+    allowed_redis_errors = 3
     twstring = ''
     tweets = []
     r = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0)
@@ -53,7 +56,8 @@ class StdOutListener(StreamListener):
         try:
             self.r.lpush(REDIS_LIST, tw)
         except:
-            print 'Problem adding sensor data to Redis.'
+            print 'Problem adding data to Redis.'
+            self.redis_errors += 1
 
     def on_data(self, data):
         """What to do when tweet data is received."""
@@ -65,8 +69,11 @@ class StdOutListener(StreamListener):
         # that happens.
         if self.count > self.total_tweets:
             return False
+        if self.redis_errors > self.allowed_redis_errors:
+            print 'too many redis errors.'
+            return False
         if (self.count % 1000) == 0:
-            print 'count is: %s' % self.count
+            print 'count is: %s at %s' % (self.count, datetime.datetime.now())
         return True
 
     def on_error(self, status):

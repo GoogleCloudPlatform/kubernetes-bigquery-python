@@ -16,7 +16,7 @@
 """This script grabs tweets from a redis server, and stores them in BiqQuery
 using the BigQuery Streaming API.
 """
-
+import datetime
 import json
 import os
 
@@ -41,19 +41,33 @@ def write_to_bq(bigquery):
     """Write the data to BigQuery in small chunks."""
     tweets = []
     CHUNK = 50  # The size of the BigQuery insertion batch.
-    twstring = ''
     tweet = None
     mtweet = None
-    while True:
+    count = 0
+    count_max = 50000
+    redis_errors = 0
+    allowed_redis_errors = 3
+    while count < count_max:
         while len(tweets) < CHUNK:
             # We'll use a blocking list pop -- it returns when there is
             # new data.
-            res = r.brpop(REDIS_LIST)
-            twstring = res[1]
+            res = None
+            try:
+                res = r.brpop(REDIS_LIST)
+            except:
+                print 'Problem getting data from Redis.'
+                redis_errors += 1
+                if redis_errors > allowed_redis_errors:
+                    print "Too many redis errors: exiting."
+                    return
+                continue
             try:
                 tweet = json.loads(res[1])
-            except Exception, bqe:
-                print bqe
+            except Exception, e:
+                print e
+                if redis_errors > allowed_redis_errors:
+                    print "Too many redis errors: exiting."
+                    return
                 continue
             # First do some massaging of the raw data
             mtweet = utils.cleanup(tweet)
@@ -62,13 +76,16 @@ def write_to_bq(bigquery):
             if 'delete' in mtweet:
                 continue
             if 'limit' in mtweet:
-                print mtweet
                 continue
             tweets.append(mtweet)
         # try to insert the tweets into bigquery
-        utils.bq_data_insert(bigquery, PROJECT_ID, os.environ['BQ_DATASET'],
+        response = utils.bq_data_insert(bigquery, PROJECT_ID, os.environ['BQ_DATASET'],
                              os.environ['BQ_TABLE'], tweets)
         tweets = []
+        count += 1
+        if count % 25 == 0:
+            print ("processing count: %s of %s at %s: %s" %
+                   (count, count_max, datetime.datetime.now(), response))
 
 
 if __name__ == '__main__':

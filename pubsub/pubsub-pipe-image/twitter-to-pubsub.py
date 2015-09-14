@@ -18,6 +18,7 @@ to pull in tweets and publish them to a PubSub topic.
 """
 
 import base64
+import datetime
 import os
 from tweepy import OAuthHandler
 from tweepy import Stream
@@ -77,7 +78,7 @@ class StdOutListener(StreamListener):
         if self.count > self.total_tweets:
             return False
         if (self.count % 1000) == 0:
-            print 'count is: %s' % self.count
+            print 'count is: %s at %s' % (self.count, datetime.datetime.now())
         return True
 
     def on_error(self, status):
