@@ -61,13 +61,15 @@ def cleanup(data):
                 newdict[k] = list(flatten(v))
             elif k == 'created_at' and v:
                 newdict[k] = str(dateutil.parser.parse(v))
-            elif v is False:
-                newdict[k] = v
             # temporarily, ignore some fields not supported by the
             # current BQ schema.
             # TODO: update BigQuery schema
-            elif k == 'video_info' or k == 'scopes' or k == 'withheld_in_countries' or 'quoted_status' in k:
+            elif (k == 'video_info' or k == 'scopes' or k == 'withheld_in_countries'
+                  or k == 'is_quote_status' or 'source_user_id' in k
+                  or 'quoted_status' in k):
                 pass
+            elif v is False:
+                newdict[k] = v
             else:
                 if k and v:
                     newdict[k] = cleanup(v)
