@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: twitter-to-redis
-        image: gcr.io/google-samples/redis-bq-pipe:v1
+        image: gcr.io/google-samples/redis-bq-pipe:v2
         env:
         - name: PROCESSINGSCRIPT
           value: twitter-to-redis
