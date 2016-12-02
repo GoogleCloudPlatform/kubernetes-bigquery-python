@@ -359,7 +359,7 @@ language prefer favoriting to retweeting, or vice versa:
 Labels make it easy to select the resources you want to stop or delete, e.g.:
 
 ```shell
-kubectl stop deployment -l "name in (twitter-stream, bigquery-controller)"
+kubectl delete deployment -l "name in (twitter-stream, bigquery-controller)"
 ```
 
 
@@ -374,7 +374,7 @@ This takes down all of the instances in your cluster.
 
 In addition to the info here, also see the [Troubleshooting](https://github.com/GoogleCloudPlatform/kubernetes/blob/master/docs/troubleshooting.md) page in the Kubernetes docs.
 
-To confirm that all your nodes, pods, nodes, and replication controllers are up and
+To confirm that all your nodes, pods, and deployments are up and
 running properly, you can run the following commands:
 
     $ kubectl get nodes
