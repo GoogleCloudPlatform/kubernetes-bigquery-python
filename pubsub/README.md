@@ -3,29 +3,25 @@ Copyright (C) 2014 Google Inc.
 
 # Example app: Real-time data analysis using Kubernetes, PubSub, and BigQuery
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-**Table of Contents**
-
 - [Introduction](#introduction)
 - [Prerequisites and initial setup](#prerequisites-and-initial-setup)
-    - [Install Docker](#install-docker)
-    - [Create and configure a new Google Cloud Platform project](#create-and-configure-a-new-google-cloud-platform-project)
-    - [Set up the Google Cloud SDK](#set-up-the-google-cloud-sdk)
-    - [Create a BigQuery table](#create-a-bigquery-table)
-    - [Create a Twitter application and access token](#create-a-twitter-application-and-access-token)
-    - [Set up a PubSub topic in your project](#set-up-a-pubsub-topic-in-your-project)
-    - [Install Kubernetes, and configure and start a Kubernetes cluster](#install-kubernetes-and-configure-and-start-a-kubernetes-cluster)
+  - [Install Docker](#install-docker)
+  - [Create and configure a new Google Cloud Platform project](#create-and-configure-a-new-google-cloud-platform-project)
+  - [Set up the Google Cloud SDK](#set-up-the-google-cloud-sdk)
+  - [Create a BigQuery table](#create-a-bigquery-table)
+  - [Create a Twitter application and access token](#create-a-twitter-application-and-access-token)
+  - [Set up a PubSub topic in your project](#set-up-a-pubsub-topic-in-your-project)
+  - [Install Kubernetes, and configure and start a Kubernetes cluster](#install-kubernetes-and-configure-and-start-a-kubernetes-cluster)
 - [Configure your app](#configure-your-app)
-    - [Build and push a Docker image for your app](#build-and-push-a-docker-image-for-your-app)
-    - [Kubernetes pod and replication controller configuration](#kubernetes-pod-and-replication-controller-configuration)
+  - [Optional: Build and push a Docker image for your app](#optional-build-and-push-a-docker-image-for-your-app)
+  - [Kubernetes pod, Replica Set, and Deployment configuration](#kubernetes-pod-replica-set-and-deployment-configuration)
+    - [Deployment configuration](#deployment-configuration)
 - [Starting up your app](#starting-up-your-app)
-    - [Listing your running pods and replication controllers](#listing-your-running-pods-and-replication-controllers)
-    - [Resizing the `bigquery-controller`](#resizing-the-bigquery-controller)
+  - [Listing your running pods and Deployments](#listing-your-running-pods-and-deployments)
+  - [Resizing the `bigquery-controller`](#resizing-the-bigquery-controller)
 - [Query your BigQuery table](#query-your-bigquery-table)
 - [Shut down your replicated pods and cluster](#shut-down-your-replicated-pods-and-cluster)
 - [Troubleshooting](#troubleshooting)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Introduction
 
