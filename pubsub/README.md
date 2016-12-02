@@ -3,29 +3,25 @@ Copyright (C) 2014 Google Inc.
 
 # Example app: Real-time data analysis using Kubernetes, PubSub, and BigQuery
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-**Table of Contents**
-
 - [Introduction](#introduction)
 - [Prerequisites and initial setup](#prerequisites-and-initial-setup)
-    - [Install Docker](#install-docker)
-    - [Create and configure a new Google Cloud Platform project](#create-and-configure-a-new-google-cloud-platform-project)
-    - [Set up the Google Cloud SDK](#set-up-the-google-cloud-sdk)
-    - [Create a BigQuery table](#create-a-bigquery-table)
-    - [Create a Twitter application and access token](#create-a-twitter-application-and-access-token)
-    - [Set up a PubSub topic in your project](#set-up-a-pubsub-topic-in-your-project)
-    - [Install Kubernetes, and configure and start a Kubernetes cluster](#install-kubernetes-and-configure-and-start-a-kubernetes-cluster)
+  - [Install Docker](#install-docker)
+  - [Create and configure a new Google Cloud Platform project](#create-and-configure-a-new-google-cloud-platform-project)
+  - [Set up the Google Cloud SDK](#set-up-the-google-cloud-sdk)
+  - [Create a BigQuery table](#create-a-bigquery-table)
+  - [Create a Twitter application and access token](#create-a-twitter-application-and-access-token)
+  - [Set up a PubSub topic in your project](#set-up-a-pubsub-topic-in-your-project)
+  - [Install Kubernetes, and configure and start a Kubernetes cluster](#install-kubernetes-and-configure-and-start-a-kubernetes-cluster)
 - [Configure your app](#configure-your-app)
-    - [Build and push a Docker image for your app](#build-and-push-a-docker-image-for-your-app)
-    - [Kubernetes pod and replication controller configuration](#kubernetes-pod-and-replication-controller-configuration)
+  - [Optional: Build and push a Docker image for your app](#optional-build-and-push-a-docker-image-for-your-app)
+  - [Kubernetes pod, Replica Set, and Deployment configuration](#kubernetes-pod-replica-set-and-deployment-configuration)
+    - [Deployment configuration](#deployment-configuration)
 - [Starting up your app](#starting-up-your-app)
-    - [Listing your running pods and replication controllers](#listing-your-running-pods-and-replication-controllers)
-    - [Resizing the `bigquery-controller`](#resizing-the-bigquery-controller)
+  - [Listing your running pods and Deployments](#listing-your-running-pods-and-deployments)
+  - [Resizing the `bigquery-controller`](#resizing-the-bigquery-controller)
 - [Query your BigQuery table](#query-your-bigquery-table)
 - [Shut down your replicated pods and cluster](#shut-down-your-replicated-pods-and-cluster)
 - [Troubleshooting](#troubleshooting)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Introduction
 
@@ -167,11 +163,12 @@ Note down the name of the topic you made.
 [Download the latest Kubernetes binary release](https://github.com/GoogleCloudPlatform/kubernetes/releases/latest)
 and unpack it into the directory of your choice.
 
-Make one change before you start up the Kubernetes cluster: **edit the `MINION_SCOPES`** in
-`<kubernetes>/cluster/gce/config-default.sh` before starting up the cluster, to let your instances auth with BigQuery and PubSub:
+Make one change before you start up the Kubernetes cluster: **edit the `NODE_SCOPES`** in
+`<kubernetes>/cluster/gce/config-common.sh` before starting up the cluster, to let your instances auth with BigQuery and PubSub:
 
 ```
-MINION_SCOPES=("storage-ro" "compute-rw" "https://www.googleapis.com/auth/monitoring" "https://www.googleapis.com/auth/logging.write" "bigquery" "https://www.googleapis.com/auth/cloud-platform")
+NODE_SCOPES="${NODE_SCOPES:-compute-rw,monitoring,logging-write,storage-ro,bigquery,https://www.googleapis.com/auth/pubsub}"
+
 ```
 
 Then, see [this section](https://github.com/GoogleCloudPlatform/kubernetes/blob/master/docs/getting-started-guides/gce.md#installing-the-kubernetes-command-line-tools-on-your-workstation) of the GCE "getting started" guide to set up access to the `kubectl` command-line tool in your path. As noted in that guide, `gcloud` also ships with kubectl, which by default is added to your path. However the `gcloud` bundled kubectl version may be older, and we recommend that you use the downloaded binary to avoid potential issues with client/server version skew.
@@ -191,11 +188,11 @@ Now you're ready to configure your app.  This involves two things: optionally bu
 
 ### Optional: Build and push a Docker image for your app
 
-If you like, you can use the prebuilt docker image, `gcr.io/google-samples/pubsub-bq-pipe:v1`, for your app. This is the image used by default in the `bigquery-controller.yaml` and `twitter-stream.yaml` files.
+If you like, you can use the prebuilt docker image, `gcr.io/google-samples/pubsub-bq-pipe:v3`, for your app. This is the image used by default in the `bigquery-controller.yaml` and `twitter-stream.yaml` files.
 
 Follow the instructions below if you'd like to build and use your own image instead.
 
-This Kubernetes app uses a [Docker](https://www.docker.com/) image that runs the app's python scripts.  (An environment variable set in the replication controller specification files, `PROCESSINGSCRIPT`, indicates which script to run).  Once the image is built, it needs to be pushed somewhere that Kubernetes can access it.  For this example, we'll use the new [Google Container
+This Kubernetes app uses a [Docker](https://www.docker.com/) image that runs the app's python scripts.  (An environment variable set in the Deployment specification files, `PROCESSINGSCRIPT`, indicates which script to run).  Once the image is built, it needs to be pushed somewhere that Kubernetes can access it.  For this example, we'll use the new [Google Container
 Registry](https://cloud.google.com/tools/container-registry/) (GCR), in Beta. It uses a Google Cloud Storage bucket in your own project to store the images, for privacy and low latency.  The GCR [docs](https://cloud.google.com/tools/container-registry/) provide more information on GCR and how to push images to it.  You can also push your
 images to, e.g., the Docker Hub.
 
@@ -218,22 +215,23 @@ Finally, use `gcloud` to push your image to GCR, using the tag name you created:
     $ gcloud docker push gcr.io/your_project_name/pubsubpipe
 
 
-### Kubernetes pod and replication controller configuration
+### Kubernetes pod, Replica Set, and Deployment configuration
 
 In Kubernetes, [**pods**](https://github.com/GoogleCloudPlatform/kubernetes/blob/master/docs/pods.md)-- rather than individual application containers-- are the smallest deployable units that can be created, scheduled, and managed.
 
-A [**replication controller**](https://github.com/GoogleCloudPlatform/kubernetes/blob/master/docs/replication-controller.md) ensures that a specified number of pod "replicas" are running at any one time. If there are too many, it will kill some. If there are too few, it will start more. As opposed to just creating singleton pods or even creating pods in bulk, a replication controller replaces pods that are deleted or terminated for any reason, such as in the case of node failure.
+A [**replica set**](http://kubernetes.io/docs/user-guide/replicasets/) ensures that a specified number of pod "replicas" are running at any one time. If there are too many, it will kill some. If there are too few, it will start more. As opposed to just creating singleton pods or even creating pods in bulk, a replica set replaces pods that are deleted or terminated for any reason, such as in the case of node failure.
 
-We will use replicated pods for both parts of our Kubernetes app.  The first, specified by `twitter-stream.yaml`, defines one replica of a container that will read in tweets via the Twitter streaming API and dump them to a PubSub topic. We're only using one replica here so that we don't open up multiple Twitter API connections on the same app.  However, we're still using a replicated pod for the robustness that gives us-- if the pod crashes for some reason, it will be restarted, since will specify that there should always be one running.
+A [Deployment](http://kubernetes.io/docs/user-guide/deployments/) provides declarative updates for Pods and Replica Sets. You only need to describe the desired state in a Deployment object, and the Deployment controller will change the actual state to the desired state at a controlled rate for you.
+We will use Deployments for both parts of our Kubernetes app.  The first, specified by `twitter-stream.yaml`, defines one replica of a container that will read in tweets via the Twitter streaming API and dump them to a PubSub topic. We're only using one replica here so that we don't open up multiple Twitter API connections on the same app.  However, we're still using a replicated pod for the robustness that gives us-- if the pod crashes for some reason, it will be restarted, since will specify that there should always be one running.
 
 The second part of the app, specified by `bigquery-controller.yaml`, defines two replicas of a container that will subscribe to the same PubSub topic, pull off tweets in small batches, and insert them into a BigQuery table via the BigQuery Streaming API.  Here, we can use multiple pods-- they will use the same subscription to read from the PubSub topic, thus distributing the load. If source throughput were to increase, we could increase the number of these  `bigquery-controller` pods.
 
-#### Replication controller configuration
+#### Deployment configuration
 
 Edit `$EXAMPLE_DIR/twitter-stream.yaml`.  Set your `PUBSUB_TOPIC` to the name of the topic you created.
-Then, set the Twitter authentication information to the values you noted when setting up your Twitter application (`CONSUMERKEY`,`CONSUMERSECRET`, `ACCESSTOKEN`, `ACCESSTOKENSEC`).  Then, replace the image string `gcr.io/your-project/your-image-tag` with the name of the image that you have created and pushed.
+Then, set the Twitter authentication information to the values you noted when setting up your Twitter application (`CONSUMERKEY`,`CONSUMERSECRET`, `ACCESSTOKEN`, `ACCESSTOKENSEC`).  Then, if you built your own docker image, replace the image string `gcr.io/google-samples/pubsub-bq-pipe:v3` with the name of the image that you have created and pushed.
 
-Edit `$EXAMPLE_DIR/bigquery-controller.yaml`.  Set your `PUBSUB_TOPIC`, and set your `PROJECT_ID`, `BQ_DATASET`, and `BQ_TABLE` information.  Then, replace the image string `gcr.io/your-project/your-image-tag` with the name of the image that you have created and pushed.
+Edit `$EXAMPLE_DIR/bigquery-controller.yaml`.  Set your `PUBSUB_TOPIC`, and set your `PROJECT_ID`, `BQ_DATASET`, and `BQ_TABLE` information.  Then, if you built your own docker image, replace the image string `gcr.io/google-samples/pubsub-bq-pipe:v3` with the name of the image that you have created and pushed.
 
 ## Starting up your app
 
@@ -244,7 +242,7 @@ After starting up your Kubernetes cluster, and configuring your `pubsub/*.yaml` 
     $ kubectl.sh create -f bigquery-controller.yaml
     $ kubectl.sh create -f twitter-stream.yaml
 
-### Listing your running pods and replication controllers
+### Listing your running pods and Deployments
 
 To see your running pods, run:
 
@@ -252,22 +250,22 @@ To see your running pods, run:
 
 (Again, this assumes you've put `<path-to-kubernetes>/cluster` in your path)
 
-You'll see a list of the pods that are running, the containers they're using, and the node they're running on in the cluster. You'll see some pods started by the system, as well as your own pods. Because the `bigquery-controller` replication controller has specified two replicas, you will see two pods running with names like `bigquery-controller-xxxx`.
+You'll see a list of the pods that are running, the containers they're using, and the node they're running on in the cluster. You'll see some pods started by the system, as well as your own pods. Because the `bigquery-controller` Deployment has specified two replicas, you will see two pods running with names like `bigquery-controller-xxxx`.
 
 You can see whether each pod is `Running` or `Pending`.  If a pod isn't moving into
 the `Running` state after about a minute, that is an indication that it isn't starting up properly.  See the "Troubleshooting" section below.
 
 You can run:
 
-    $ kubectl get rc
+    $ kubectl get deployments
 
-to see the system's defined replication controllers, and how many replicas each is specified to have.
+to see the system's defined deployments, and how many replicas each is specified to have.
 
 ### Resizing the `bigquery-controller`
 
 For fun, try resizing `bigquery-controller` once its pods are running:
 
-    $ kubectl scale --replicas=3 rc bigquery-controller
+    $ kubectl scale --replicas=3 deployment bigquery-controller
 
 You should see an additional third pod running shortly.
 
@@ -357,7 +355,7 @@ language prefer favoriting to retweeting, or vice versa:
 Labels make it easy to select the resources you want to stop or delete, e.g.:
 
 ```shell
-kubectl stop rc -l "name in (twitter-stream, bigquery-controller)"
+kubectl delete deployment -l "name in (twitter-stream, bigquery-controller)"
 ```
 
 
@@ -372,12 +370,12 @@ This takes down all of the instances in your cluster.
 
 In addition to the info here, also see the [Troubleshooting](https://github.com/GoogleCloudPlatform/kubernetes/blob/master/docs/troubleshooting.md) page in the Kubernetes docs.
 
-To confirm that all your nodes, pods, nodes, and replication controllers are up and
+To confirm that all your nodes, pods, and deployments are up and
 running properly, you can run the following commands:
 
     $ kubectl get nodes
     $ kubectl get pods
-    $ kubectl get rc
+    $ kubectl get deployments
 
 For the pods, you can see whether each pod is `Running` or `Pending`.  If a pod isn't moving into
 the `Running` state after about a minute, that is an indication that it isn't starting up properly.
