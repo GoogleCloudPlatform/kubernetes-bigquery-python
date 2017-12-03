@@ -79,8 +79,10 @@ def cleanup(data):
             # current BQ schema.
             # TODO: update BigQuery schema
             elif (k == 'video_info' or k == 'scopes' or k == 'withheld_in_countries'
-                  or k == 'is_quote_status' or 'source_user_id' in k
-                  or 'quoted_status' in k or 'display_text_range' in k or 'extended_tweet' in k):
+                  or k == 'is_quote_status' or 'source_user_id' in k or 'translator_type' in k
+                  or 'reply_count' in k or 'quote_count' in k or k == ''
+                  or 'quoted_status' in k or 'display_text_range' in k or 'extended_tweet' in k
+                  or 'media' in k):
                 pass
             elif v is False:
                 newdict[k] = v
