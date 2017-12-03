@@ -329,6 +329,11 @@
         "mode": "NULLABLE"
       },
       {
+        "name": "translator_type",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
         "name": "profile_background_color",
         "type": "STRING",
         "mode": "NULLABLE"
@@ -755,6 +760,16 @@
         "mode": "NULLABLE"
       },
       {
+        "name": "reply_count",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "quote_count",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+      },
+      {
         "name": "user",
         "type": "RECORD",
         "mode": "NULLABLE",
@@ -862,6 +877,11 @@
           {
             "name": "is_translator",
             "type": "BOOLEAN",
+            "mode": "NULLABLE"
+          },
+          {
+            "name": "translator_type",
+            "type": "STRING",
             "mode": "NULLABLE"
           },
           {
