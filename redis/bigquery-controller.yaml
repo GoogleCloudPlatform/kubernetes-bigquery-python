@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: bigquery
-        image: gcr.io/google-samples/redis-bq-pipe:v3
+        image: gcr.io/google-samples/redis-bq-pipe:v4
         env:
         - name: PROCESSINGSCRIPT
           value: redis-to-bigquery
