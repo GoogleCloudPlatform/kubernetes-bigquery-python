@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: twitter-stream
@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: twitter-to-pubsub
-        image: gcr.io/google-samples/pubsub-bq-pipe:v3
+        image: gcr.io/google-samples/pubsub-bq-pipe:v4
         env:
         - name: PROCESSINGSCRIPT
           value: twitter-to-pubsub
