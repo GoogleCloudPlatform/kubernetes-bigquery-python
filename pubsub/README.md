@@ -118,7 +118,7 @@ We'll stay in this directory for the rest of the tutorial.
 ### Create a BigQuery table
 
 Next, create a BigQuery table to store your tweets. BigQuery groups
-tables into abstraction layers called datasets, so first create a dataset as necessary.  You can do this from the [web UI](xxx), or from the command line like this:
+tables into abstraction layers called datasets, so first create a dataset as necessary.  You can do this from the [web UI](https://cloud.google.com/bigquery/docs/tables#create-table), or from the command line like this:
 
 ```sh
 bq mk <your-dataset-name>
@@ -137,7 +137,7 @@ a schema. This example includes a predefined schema in the `kubernetes-bigquery-
 bq mk -t <your-dataset-name>.tweets ../bigquery-setup/schema.json
 ```
 
-(If you prefer, you can also create your table via the web Bigquery UI, pasting in the schema from `schema.json`).
+(If you prefer, you can also create your table via the web BigQuery UI, pasting in the schema from `schema.json`).
 
 ### Create a Twitter application and access token
 
@@ -201,9 +201,9 @@ Now you're ready to configure your app.  This requires editing two Kubernetes `.
 
 ### Kubernetes Pods, Replica Sets, and Deployments
 
-In Kubernetes, [**pods**](https://github.com/GoogleCloudPlatform/kubernetes/blob/master/docs/pods.md)-- rather than individual application containers-- are the smallest deployable units that can be created, scheduled, and managed.
+In Kubernetes, [pods](https://github.com/GoogleCloudPlatform/kubernetes/blob/master/docs/pods.md)-- rather than individual application containers-- are the smallest deployable units that can be created, scheduled, and managed.
 
-A [**replica set**](http://kubernetes.io/docs/user-guide/replicasets/) ensures that a specified number of pod "replicas" are running at any one time. If there are too many, it will kill some. If there are too few, it will start more. As opposed to just creating singleton pods or even creating pods in bulk, a replica set replaces pods that are deleted or terminated for any reason, such as in the case of node failure.
+A [replica set](http://kubernetes.io/docs/user-guide/replicasets/) ensures that a specified number of pod "replicas" are running at any one time. If there are too many, it will kill some. If there are too few, it will start more. As opposed to just creating singleton pods or even creating pods in bulk, a replica set replaces pods that are deleted or terminated for any reason, such as in the case of node failure.
 
 A [Deployment](http://kubernetes.io/docs/user-guide/deployments/) provides declarative updates for Pods and Replica Sets. You only need to describe the desired state in a Deployment object, and the Deployment controller will change the actual state to the desired state at a controlled rate for you.
 
