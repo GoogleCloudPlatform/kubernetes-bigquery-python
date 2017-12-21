@@ -214,7 +214,7 @@ Set the Twitter authentication information to the values you noted when setting 
 Edit `bigquery-controller.yaml`.  Set your `PROJECT_ID`, `BQ_DATASET`, and `BQ_TABLE` information.
 
 (If you optionally built your own docker image as described in the Appendix, also replace the image string
-`gcr.io/google-samples/redis-bq-pipe:v4` with the name of the container image that you have built and pushed.)
+`gcr.io/google-samples/redis-bq-pipe:v5` with the name of the container image that you have built and pushed.)
 
 ### Deploy your app
 
@@ -424,7 +424,7 @@ If you don't see evidence that your container has ever started sucessfully, doub
 This step is optional.
 
 The example app uses a [Docker](https://www.docker.com/) image that runs the app's python scripts. 
-If you like, you can just use the prebuilt docker image, `gcr.io/google-samples/redis-bq-pipe:v4`, for your app. This is the image used by default in the `bigquery-controller.yaml` and `twitter-stream.yaml` files.
+If you like, you can just use the prebuilt docker image, `gcr.io/google-samples/redis-bq-pipe:v5`, for your app. This is the image used by default in the `bigquery-controller.yaml` and `twitter-stream.yaml` files.
 
 Follow the instructions below if you'd like to add customization and use your own image instead.
 For this, you'll either need [Docker](https://docs.docker.com/installation/#installation) installed locally, or you can run Docker in the Cloud Shell. (You could also alternately use [Google Cloud Container Builder](https://cloud.google.com/container-builder/docs/).)
@@ -451,7 +451,7 @@ gcloud docker -- push gcr.io/<your-project-name>/redis-bq-pipe:v1
 ```
 
 Finally, edit `twitter-stream.yaml` and `bigquery-controller.yaml`, and
-replace `gcr.io/google-samples/redis-bq-pipe:v4` with the name of your image.
+replace `gcr.io/google-samples/redis-bq-pipe:v5` with the name of your image.
 
 
 

@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: twitter-to-pubsub
-        image: gcr.io/google-samples/pubsub-bq-pipe:v4
+        image: gcr.io/google-samples/pubsub-bq-pipe:v5
         env:
         - name: PROCESSINGSCRIPT
           value: twitter-to-pubsub

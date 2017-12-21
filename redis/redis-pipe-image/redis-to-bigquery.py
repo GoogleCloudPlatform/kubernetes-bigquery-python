@@ -65,8 +65,9 @@ def write_to_bq(bigquery):
                 tweet = json.loads(res[1])
             except Exception, e:
                 print e
+                redis_errors += 1
                 if redis_errors > allowed_redis_errors:
-                    print "Too many redis errors: exiting."
+                    print "Too many redis-related errors: exiting."
                     return
                 continue
             # First do some massaging of the raw data
