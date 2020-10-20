@@ -1,4 +1,4 @@
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: twitter-stream
@@ -6,6 +6,9 @@ metadata:
     name: twitter-stream
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      name: twitter-stream
   template:
     metadata:
       labels:
